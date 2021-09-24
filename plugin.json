@@ -1,0 +1,11 @@
+{
+  "ID":"F94E1D90CB0047068C09AC20E6E4CFAE",
+  "ActionKeyword":"closein",
+  "Name":"CloseIn",
+  "Description":"Closes an .exe in a period of time",
+  "Author":"cmaybon",
+  "Version":"1.0.0",
+  "Language":"python",
+  "IcoPath": "Images\\closein.png",
+  "ExecuteFileName":"main.py"
+}
