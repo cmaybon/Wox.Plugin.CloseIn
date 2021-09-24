@@ -39,6 +39,7 @@ class CloseIn(Wox):
             for running_exe in CloseIn.RUNNING_EXES:
                 if running_exe.lower().startswith(target_process_name.lower()):
                     potential_matches.append(running_exe)
+        potential_matches.append("_shutdown")
 
         results = list()
         for potential_match in potential_matches:
@@ -61,7 +62,7 @@ class CloseIn(Wox):
         if target_process_name is False:
             return results
 
-        if len(potential_matches) > 0:
+        if len(potential_matches) > 0 and " " not in query:
             potential_match = potential_matches[0]
             results.insert(0, {
                 "Title": "CloseIn Autocomplete",
