@@ -85,11 +85,15 @@ class CloseIn(Wox):
         parsed_time = self.parse_time(time_string)
         if parsed_time is None:
             return
-        target_time = datetime.now() + parsed_time
+
+        current_datetime = datetime.now()
+        target_time = current_datetime + parsed_time
+        # Date may need to be set if the target time goes into another day
+        target_date_string = target_time.strftime("%d/%m/%Y")
         target_time_string = target_time.strftime("%H:%M:%S")
 
         if process_name == "_shutdown":
-            self.schedule_pc_shutdown(target_time_string)
+            self.schedule_pc_shutdown(target_time_string, target_date_string)
             return
 
         if not process_name.endswith(".exe"):
@@ -99,6 +103,7 @@ class CloseIn(Wox):
                   f'/tn "{task_name}" '
                   f'/sc once '
                   f'/st {target_time_string} '
+                  f'/sd {target_date_string} '
                   f'/tr "cmd /c \'schtasks /delete /tn {task_name} /f && taskkill /f /im {process_name} /t\'"')
 
     def parse_time(self, time_string):
@@ -114,12 +119,13 @@ class CloseIn(Wox):
                 time_params[name] = int(param)
         return timedelta(**time_params)
 
-    def schedule_pc_shutdown(self, target_time_string):
+    def schedule_pc_shutdown(self, target_time_string, target_date_string):
         task_name = "wox_plugin_closein_shutdown_pc"
         os.system(f'schtasks /create '
                   f'/tn "{task_name}" '
                   f'/sc once '
                   f'/st {target_time_string} '
+                  f'/sd {target_date_string} '
                   f'/tr "cmd /c \'schtasks /delete /tn {task_name} /f && shutdown /s /hybrid /t 0\'"')
 
 
