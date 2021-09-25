@@ -44,55 +44,46 @@ class CloseIn(Wox):
         results = list()
         for potential_match in potential_matches:
             result = {
-                "Title": "CloseIn",
-                "Subtitle": f"match: {potential_match}, time: {time_string}",
+                "Title": f"CloseIn - {potential_match}",
                 "IcoPath": "Images\\closein.png"
             }
             if time_string:
+                parsed_time = self.parse_time_string(time_string)
+                if parsed_time:
+                    target_time, target_date = self.calculate_schedule_time_strings(parsed_time)
+                    result["Subtitle"] = f"Close at {target_time} on {target_date}"
+                    result["JsonRPCAction"] = {
+                        "method": "schedule_close_of_process",
+                        "parameters": [
+                            potential_match,
+                            target_time,
+                            target_date
+                        ],
+                        "dontHideAfterAction": False
+                    }
+                else:
+                    result["Subtitle"] = "Invalid time input"
+            elif " " not in query:
                 result["JsonRPCAction"] = {
-                    "method": "schedule_close_of_process",
-                    "parameters": [
-                        potential_match,
-                        time_string
-                    ],
-                    "dontHideAfterAction": False
-                }
-            results.append(result)
-
-        if target_process_name is False:
-            return results
-
-        if len(potential_matches) > 0 and " " not in query:
-            potential_match = potential_matches[0]
-            results.insert(0, {
-                "Title": "CloseIn Autocomplete",
-                "Subtitle": f"Press enter to autofill: \"{potential_match}\"",
-                "IcoPath": "Images\\closein.png",
-                "JsonRPCAction": {
                     "method": "auto_complete_exe_name",
                     "parameters": [
                         potential_match
                     ],
                     "dontHideAfterAction": True
                 }
-            })
+                result["Subtitle"] = "Press enter to autocomplete"
+            results.append(result)
+
+        if target_process_name is False:
+            return results
         return results
 
     def auto_complete_exe_name(self, potential_match: str):
         WoxAPI.change_query(f"{CloseIn.COMMAND_PREFIX} {potential_match} ", requery=True)
 
-    def schedule_close_of_process(self, process_name, time_string):
-        parsed_time = self.parse_time(time_string)
-        if parsed_time is None:
-            return
-
-        target_time = datetime.now() + parsed_time
-        # Date may need to be set if the target time goes into another day
-        target_date_string = target_time.strftime("%d/%m/%Y")
-        target_time_string = target_time.strftime("%H:%M:%S")
-
+    def schedule_close_of_process(self, process_name, target_time: str, target_date: str):
         if process_name == "_shutdown":
-            self.schedule_pc_shutdown(target_time_string, target_date_string)
+            self.schedule_pc_shutdown(target_time, target_date)
             return
 
         if not process_name.endswith(".exe"):
@@ -101,11 +92,11 @@ class CloseIn(Wox):
         os.system(f'schtasks /create '
                   f'/tn "{task_name}" '
                   f'/sc once '
-                  f'/st {target_time_string} '
-                  f'/sd {target_date_string} '
+                  f'/st {target_time} '
+                  f'/sd {target_date} '
                   f'/tr "cmd /c \'schtasks /delete /tn {task_name} /f && taskkill /f /im {process_name} /t\'"')
 
-    def parse_time(self, time_string):
+    def parse_time_string(self, time_string):
         regex = re.compile(r'((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
 
         parts = regex.match(time_string)
@@ -117,6 +108,13 @@ class CloseIn(Wox):
             if param:
                 time_params[name] = int(param)
         return timedelta(**time_params)
+
+    def calculate_schedule_time_strings(self, parsed_timedelta) -> typing.Tuple[str, str]:
+        target_time = datetime.now() + parsed_timedelta
+        # Date may need to be set if the target time goes into another day
+        target_time_string = target_time.strftime("%H:%M:%S")
+        target_date_string = target_time.strftime("%d/%m/%Y")
+        return target_time_string, target_date_string
 
     def schedule_pc_shutdown(self, target_time_string, target_date_string):
         task_name = "wox_plugin_closein_shutdown_pc"
