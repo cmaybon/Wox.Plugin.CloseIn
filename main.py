@@ -86,8 +86,7 @@ class CloseIn(Wox):
         if parsed_time is None:
             return
 
-        current_datetime = datetime.now()
-        target_time = current_datetime + parsed_time
+        target_time = datetime.now() + parsed_time
         # Date may need to be set if the target time goes into another day
         target_date_string = target_time.strftime("%d/%m/%Y")
         target_time_string = target_time.strftime("%H:%M:%S")

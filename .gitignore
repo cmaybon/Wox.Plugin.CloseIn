@@ -139,4 +139,3 @@ cython_debug/
 
 .idea/
 wox.py
-Makefile
